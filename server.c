@@ -57,11 +57,10 @@ int main() {
             bytes_received = recv(connfd, request, sizeof(request), 0);
             if (bytes_received < 0) {
                 perror("Error receiving request");
-                break; // Break the inner loop, but keep the connection open
+                break;
             } else if (bytes_received == 0) {
-                // Client has closed the connection
                 printf("Client closed the connection.\n");
-                break; // Break the inner loop
+                break;
             }
 
             request[bytes_received] = '\0';
@@ -73,9 +72,8 @@ int main() {
             } else if (strcmp(request, "list_files") == 0) {
                 list_files(connfd);
             } else if (strcmp(request, "exit") == 0) {
-                // Client wants to exit the session
                 printf("Client requested to exit the session.\n");
-                break; // Break the inner loop
+                break;
             } else {
                 printf("Invalid request from client: %s\n", request);
             }
