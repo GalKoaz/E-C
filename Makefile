@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -g
 
 SRCS = server.c functions.c
 OBJS = $(SRCS:.c=.o)

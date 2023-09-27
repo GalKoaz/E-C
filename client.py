@@ -2,7 +2,7 @@ import socket
 import os
 
 host = '127.0.0.1'
-port = 8080
+port = 123144
 
 
 def send_file(sock, filename):
@@ -45,18 +45,35 @@ def download_file(sock, filename):
         print(f"Error: {str(e)}")
 
 
-def show_files(sock):
+import socket
+
+
+def receive_file_list(sock):
     try:
+
+        file_list_length_str = sock.recv(16).decode()
+        file_list_length = int(file_list_length_str)
+
+        sock.send(b'ACK')
+
+        # Receive the file list
         files_list = ""
-        while True:
+        received_length = 0
+        while received_length < file_list_length:
             chunk = sock.recv(1024).decode()
             if not chunk:
                 break
+            received_length += len(chunk)
             files_list += chunk
+            print(f"Received chunk:\n{chunk}")
 
-        print(f"Files available on the server:\n{files_list}")
+        # return files_list
+
+    except socket.error as e:
+        print(f"Socket error: {str(e)}")
     except Exception as e:
         print(f"Error: {str(e)}")
+
 
 
 def main():
@@ -76,7 +93,7 @@ def main():
             download_file(sock, filename)
         elif operation == 'Files':
             sock.send(b'list_files')
-            show_files(sock)
+            receive_file_list(sock)
         elif operation == 'exit':
             break
         else:
