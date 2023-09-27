@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "server.h"
 
-#define PORT 8080
+#define PORT 12312
 #define SA struct sockaddr
 #define SIZE 1024
 
@@ -28,7 +28,7 @@ int main() {
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(PORT);
 
-    if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
+    if ((bind(sockfd, (SA *) &servaddr, sizeof(servaddr))) != 0) {
         printf("socket bind failed...\n");
         exit(0);
     }
@@ -36,13 +36,12 @@ int main() {
     if ((listen(sockfd, 5)) != 0) {
         printf("Listen failed...\n");
         exit(0);
-    }
-    else
+    } else
         printf("Server listening..\n");
     len = sizeof(cli);
 
     while (1) {
-        connfd = accept(sockfd, (SA*)&cli, &len);
+        connfd = accept(sockfd, (SA *)&cli, &len);
         if (connfd < 0) {
             perror("server accept failed...");
             continue;
@@ -50,28 +49,38 @@ int main() {
             printf("server accepted the client...\n");
         }
 
-        char request[SIZE];
-        ssize_t bytes_received;
+        while (1) {
+            char request[SIZE];
+            ssize_t bytes_received;
+            memset(request, 0, sizeof(request));
 
-        bytes_received = recv(connfd, request, sizeof(request), 0);
-        if (bytes_received < 0) {
-            perror("Error receiving request");
-            close(connfd);
-            continue;
-        }
-        request[bytes_received] = '\0';
+            bytes_received = recv(connfd, request, sizeof(request), 0);
+            if (bytes_received < 0) {
+                perror("Error receiving request");
+                break; // Break the inner loop, but keep the connection open
+            } else if (bytes_received == 0) {
+                // Client has closed the connection
+                printf("Client closed the connection.\n");
+                break; // Break the inner loop
+            }
 
-        if (strcmp(request, "upload") == 0) {
-            write_file(connfd);
-        } else if (strcmp(request, "download") == 0) {
-            download_file(connfd);
-        } else if (strcmp(request, "list_files") == 0) {
-            list_files(connfd);
-        } else {
-            printf("Invalid request from client: %s\n", request);
+            request[bytes_received] = '\0';
+
+            if (strcmp(request, "upload") == 0) {
+                write_file(connfd);
+            } else if (strcmp(request, "download") == 0) {
+                download_file(connfd);
+            } else if (strcmp(request, "list_files") == 0) {
+                list_files(connfd);
+            } else if (strcmp(request, "exit") == 0) {
+                // Client wants to exit the session
+                printf("Client requested to exit the session.\n");
+                break; // Break the inner loop
+            } else {
+                printf("Invalid request from client: %s\n", request);
+            }
         }
 
         close(connfd);
     }
-    close(sockfd);
 }

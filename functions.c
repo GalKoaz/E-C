@@ -5,7 +5,6 @@
 
 #include "server.h"
 
-#define PORT 8080
 #define SIZE 1024
 
 
@@ -84,6 +83,29 @@ void download_file(int client_socket) {
     printf("File '%s' sent successfully.\n", filename);
 }
 
+//void list_files(int client_socket) {
+//    DIR *dir;
+//    struct dirent *entry;
+//
+//    dir = opendir("./");
+//    if (dir == NULL) {
+//        perror("Error opening directory");
+//        return;
+//    }
+//
+//    char file_list[SIZE] = "";
+//
+//    while ((entry = readdir(dir)) != NULL) {
+//        strcat(file_list, entry->d_name);
+//        strcat(file_list, "\n");
+//    }
+//
+//    closedir(dir);
+//
+//
+//    send(client_socket, file_list, strlen(file_list), 0);
+//    printf("File list sent to the client.\n");
+//}
 void list_files(int client_socket) {
     DIR *dir;
     struct dirent *entry;
@@ -95,15 +117,27 @@ void list_files(int client_socket) {
     }
 
     char file_list[SIZE] = "";
+    size_t file_list_length = 0;
 
     while ((entry = readdir(dir)) != NULL) {
+        // Append file name and newline to the file list
         strcat(file_list, entry->d_name);
         strcat(file_list, "\n");
+        file_list_length += strlen(entry->d_name) + 1;
     }
 
     closedir(dir);
 
-    send(client_socket, file_list, strlen(file_list), 0);
+    // Send the file list length to the client first
+    char length_buffer[16];  // Assuming the length won't exceed 15 digits
+    snprintf(length_buffer, sizeof(length_buffer), "%zu", file_list_length);
+    send(client_socket, length_buffer, strlen(length_buffer), 0);
+
+    // Wait for acknowledgment from the client (optional)
+    char ack[3];
+    recv(client_socket, ack, sizeof(ack), 0);
+
+    // Send the file list to the client
+    send(client_socket, file_list, file_list_length, 0);
     printf("File list sent to the client.\n");
-    return;
 }
