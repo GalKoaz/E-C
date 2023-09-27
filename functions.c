@@ -76,16 +76,17 @@ void write_file(int client_socket) {
 
 
 void download_file(int client_socket) {
+    char bufferSize[SIZE];
     char filename[SIZE];
-    ssize_t bytes_sent;
+    ssize_t bytes_received;
     FILE *file;
 
-    bytes_sent = recv(client_socket, filename, sizeof(filename), 0);
-    if (bytes_sent < 0) {
+    bytes_received = recv(client_socket, filename, sizeof(filename) - 1, 0);
+    if (bytes_received < 0) {
         perror("Error receiving filename");
         return;
     }
-    filename[bytes_sent] = '\0';
+    filename[bytes_received] = '\0';
 
     file = fopen(filename, "rb");
     if (file == NULL) {
@@ -93,13 +94,28 @@ void download_file(int client_socket) {
         return;
     }
 
-    char buffer[SIZE];
+    fseek(file, 0L, SEEK_END);
+    off_t file_size = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+
+    memset(bufferSize, 0, sizeof(bufferSize));
+    snprintf(bufferSize, sizeof(bufferSize), "%ld", file_size);
+    send(client_socket, bufferSize, strlen(bufferSize), 0);
+
+
+    memset(bufferSize, 0, sizeof(bufferSize));
     size_t bytes_read;
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+    off_t total_send = 0;
+
+    char buffer[SIZE];
+
+    while (total_send < file_size) {
+        bytes_read = fread(buffer, 1, sizeof(buffer), file);
         if (send(client_socket, buffer, bytes_read, 0) < 0) {
             perror("Error sending file");
             break;
         }
+        total_send += bytes_read;
     }
 
     fclose(file);

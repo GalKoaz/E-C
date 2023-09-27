@@ -3,7 +3,7 @@ import os
 import struct
 
 host = '127.0.0.1'
-port = 13002
+port = 13006
 
 
 def send_file(sock, filename):
@@ -14,9 +14,6 @@ def send_file(sock, filename):
 
             with open(filename, "rb") as file:
                 file_size = os.path.getsize(filename)
-                print(file_size)
-                # file_size_bytes = file_size.to_bytes(8, byteorder="big")
-                # print(file_size_bytes)
                 file_size_bytes = struct.pack("!Q", file_size)
                 sock.send(file_size_bytes)
 
@@ -36,15 +33,27 @@ def send_file(sock, filename):
 
 def download_file(sock, filename):
     try:
+        # Send the filename to the server
         sock.send(filename.encode())
 
-        with open(filename, "wb") as file:
-            while True:
-                chunk = sock.recv(1024)
-                if not chunk:
+        # Receive the file size as a string
+        file_size_str = sock.recv(1024).decode()
+        file_size = int(file_size_str)
+        print(file_size)
+
+        # Receive and save the file data
+        with open(filename, "wb") as f:
+            total_received = 0
+            while total_received < file_size:
+                data = sock.recv(1024)
+                if not data:
                     break
-                file.write(chunk)
+                f.write(data)
+                total_received += len(data)
+
         print(f"File '{filename}' received and saved successfully.")
+    except ValueError:
+        print(f"Error: Invalid file size received from the server.")
     except Exception as e:
         print(f"Error: {str(e)}")
 
@@ -87,8 +96,8 @@ def main():
             filename = input('Enter the filename you want to send: ')
             send_file(sock, filename)
         elif operation == 'Download':
-            filename = input('Enter the filename you want to download: ')
             sock.send(b'download')
+            filename = input('Enter the filename you want to download: ')
             download_file(sock, filename)
         elif operation == 'Files':
             sock.send(b'list_files')
