@@ -33,15 +33,12 @@ def send_file(sock, filename):
 
 def download_file(sock, filename):
     try:
-        # Send the filename to the server
         sock.send(filename.encode())
 
-        # Receive the file size as a string
         file_size_str = sock.recv(1024).decode()
         file_size = int(file_size_str)
         print(file_size)
 
-        # Receive and save the file data
         with open(filename, "wb") as f:
             total_received = 0
             while total_received < file_size:
