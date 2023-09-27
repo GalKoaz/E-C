@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "server.h"
 
-#define PORT 12312
+#define PORT 13002
 #define SA struct sockaddr
 #define SIZE 1024
 
