@@ -72,12 +72,10 @@ void write_file(int client_socket) {
 }
 
 
-
-
-
 void download_file(int client_socket) {
 /* *
  *  ISSUE WITH THE DOWNLOAD WITH THE SEND SIZE OF FILE NEED TO FIX !
+ *  AND CHECK IN THE CLIENT!
  */
     char bufferSize[SIZE];
     char filename[SIZE];
