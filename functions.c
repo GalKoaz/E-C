@@ -76,6 +76,9 @@ void write_file(int client_socket) {
 
 
 void download_file(int client_socket) {
+/* *
+ *  ISSUE WITH THE DOWNLOAD WITH THE SEND SIZE OF FILE NEED TO FIX !
+ */
     char bufferSize[SIZE];
     char filename[SIZE];
     ssize_t bytes_received;
