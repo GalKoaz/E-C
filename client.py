@@ -3,7 +3,7 @@ import os
 import struct
 
 host = '127.0.0.1'
-port = 13006
+port = 13019
 
 
 def send_file(sock, filename):
@@ -35,9 +35,11 @@ def download_file(sock, filename):
     try:
         sock.send(filename.encode())
 
-        file_size_str = sock.recv(1024).decode()
+        file_size_str = sock.recv(1024)
         file_size = int(file_size_str)
         print(file_size)
+
+        sock.send(b"ACK")
 
         with open(filename, "wb") as f:
             total_received = 0

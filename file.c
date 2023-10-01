@@ -74,10 +74,6 @@ void write_file(int client_socket) {
 
 
 void download_file(int client_socket) {
-/* *
- *  ISSUE WITH THE DOWNLOAD WITH THE SEND SIZE OF FILE NEED TO FIX !
- *  AND CHECK IN THE CLIENT!
- */
     char bufferSize[SIZE];
     char filename[SIZE];
     ssize_t bytes_received;
@@ -96,27 +92,28 @@ void download_file(int client_socket) {
         return;
     }
 
-    fseek(file, 0L, SEEK_END);
-    off_t file_size = ftell(file);
-    fseek(file, 0L, SEEK_SET);
-
     memset(bufferSize, 0, sizeof(bufferSize));
+    fseek(file, 0L, SEEK_END);
+    off_t file_size  = ftell(file);
+    fseek(file, 0L, SEEK_SET);
     snprintf(bufferSize, sizeof(bufferSize), "%ld", file_size);
     send(client_socket, bufferSize, strlen(bufferSize), 0);
 
+    char ack[3];
+    recv(client_socket, ack, sizeof(ack), 0);
 
-    memset(bufferSize, 0, sizeof(bufferSize));
-    size_t bytes_read;
+    size_t bytes_read = 0;
     off_t total_send = 0;
 
     char buffer[SIZE];
 
     while (total_send < file_size) {
         bytes_read = fread(buffer, 1, sizeof(buffer), file);
-        if (send(client_socket, buffer, bytes_read, 0) < 0) {
+        if (bytes_read <= 0) {
             perror("Error sending file");
             break;
         }
+        send(client_socket, buffer, bytes_read, 0);
         total_send += bytes_read;
     }
 
