@@ -8,14 +8,13 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-#define PORT 13013
+#define PORT 13016
 #define SA struct sockaddr
 #define SIZE 1024
-#define MAX_CLIENTS 5
 
 
 int main() {
-    int sockfd, connfd[MAX_CLIENTS];
+    int sockfd = 0, newfd = 0, MAX_CLIENTS = 5;
     unsigned len;
     struct sockaddr_in servaddr, cli;
 
@@ -43,63 +42,68 @@ int main() {
         printf("Server listening..\n");
     len = sizeof(cli);
 
-    struct pollfd poll_fds[MAX_CLIENTS + 1];
-    poll_fds[0].fd = sockfd;
-    poll_fds[0].events = POLLIN;
-
     int num_clients = 0;
 
+    struct pollfd *pfds = malloc(sizeof *pfds * MAX_CLIENTS);
+
+
+    pfds[0].fd = sockfd;
+    pfds[0].events = POLLIN;
+
+    num_clients = 1;
+
+
     while (1) {
-        int ret = poll(poll_fds, num_clients + 1, -1);
+        int ret = poll(pfds, num_clients, -1);
         if (ret == -1) {
-            perror("Error in poll!");
+            perror("poll");
+            exit(1);
         }
 
-        if (poll_fds[0].revents & POLLIN) {
-            connfd[num_clients] = accept(sockfd, (SA *) &cli, &len);
-            if (connfd[num_clients] == -1) {
-                perror("Error accepting connection");
-            } else {
-                printf("Client connected from %s:%d\n", inet_ntoa(cli.sin_addr), ntohs(cli.sin_port));
-                poll_fds[num_clients + 1].fd = connfd[num_clients];
-                poll_fds[num_clients + 1].events = POLLIN;
-                num_clients++;
-            }
-        }
-
-        for (int i = 0; i < num_clients; i++) {
-            if (poll_fds[i + 1].revents & POLLIN) {
-                char request[SIZE];
-                ssize_t bytes_received;
-                memset(request, 0, sizeof(request));
-
-                bytes_received = recv(poll_fds[i + 1].fd, request, sizeof(request), 0);
-                if (bytes_received < 0) {
-                    perror("Error receiving request");
-                    break;
-                } else if (bytes_received == 0) {
-                    printf("Client closed the connection.\n");
-                    break;
-                }
-
-                request[bytes_received] = '\0';
-
-                if (strcmp(request, "upload") == 0) {
-                    write_file(poll_fds[i + 1].fd);
-                } else if (strcmp(request, "download") == 0) {
-                    download_file(poll_fds[i + 1].fd);
-                } else if (strcmp(request, "list_files") == 0) {
-                    list_files(poll_fds[i + 1].fd);
-                } else if (strcmp(request, "exit") == 0) {
-                    printf("Client requested to exit the session.\n");
-                    break;
+        for (int i = 0; i < num_clients; ++i) {
+            if (pfds[i].revents & POLLIN) {
+                if (pfds[i].fd == sockfd) {
+                    newfd = accept(sockfd, (SA *) &cli, &len);
+                    if (newfd == -1) {
+                        perror("accept");
+                    } else {
+                        add_to_pfds(&pfds, newfd, &num_clients, &MAX_CLIENTS);
+                        printf("Client connected from %s:%d\n", inet_ntoa(cli.sin_addr), ntohs(cli.sin_port));
+                    }
                 } else {
-                    printf("Invalid request from client: %s\n", request);
+                    char request[SIZE];
+                    ssize_t bytes_received;
+                    memset(request, 0, sizeof(request));
+
+                    bytes_received = recv(pfds[i].fd, request, sizeof(request), 0);
+                    if (bytes_received < 0) {
+                        perror("Error receiving request");
+                        break;
+                    } else if (bytes_received == 0) {
+                        printf("Client closed the connection.\n");
+                        close(pfds[i].fd);
+                        del_from_pfds(pfds, i, &num_clients);
+                        break;
+                    }
+
+                    request[bytes_received] = '\0';
+
+                    if (strcmp(request, "upload") == 0) {
+                        write_file(pfds[i].fd);
+                    } else if (strcmp(request, "download") == 0) {
+                        download_file(pfds[i].fd);
+                    } else if (strcmp(request, "list_files") == 0) {
+                        list_files(pfds[i].fd);
+                    } else if (strcmp(request, "exit") == 0) {
+                        printf("Client requested to exit the session.\n");
+                        close(pfds[i].fd);
+                        del_from_pfds(pfds, i, &num_clients);
+                        break;
+                    } else {
+                        printf("Invalid request from client: %s\n", request);
+                    }
                 }
             }
         }
-    }
-    for (int i = 0; i < num_clients; i++) {
-        close(connfd[i]);
     }
 }
