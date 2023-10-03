@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g
 
-SRCS = server.c functions.c
+SRCS = server.c file.c utils.c
 OBJS = $(SRCS:.c=.o)
 TARGET = server
 
