@@ -4,17 +4,17 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "server.h"
 #include <arpa/inet.h>
 #include <poll.h>
+#include "server.h"
 
-#define PORT 13019
+#define PORT 13021
 #define SA struct sockaddr
-#define SIZE 1024
+#define SIZE 1025
 
 
 int main() {
-    int sockfd = 0, newfd = 0, MAX_CLIENTS = 5;
+    int sockfd = 0, newfd = 0, MAX_CLIENTS = 5, num_clients = 0;
     unsigned len;
     struct sockaddr_in servaddr, cli;
 
@@ -38,14 +38,13 @@ int main() {
     if ((listen(sockfd, 5)) != 0) {
         printf("Listen failed...\n");
         exit(0);
-    } else
+    } else {
         printf("Server listening..\n");
+    }
+
     len = sizeof(cli);
 
-    int num_clients = 0;
-
     struct pollfd *pfds = malloc(sizeof *pfds * MAX_CLIENTS);
-
 
     pfds[0].fd = sockfd;
     pfds[0].events = POLLIN;
