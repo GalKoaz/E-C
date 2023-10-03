@@ -1,38 +1,22 @@
 //
 // Created by gal on 10/1/23.
 //
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <dirent.h>
-#include "server.h"
-#include <unistd.h>
-#include <stdint.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
+#include "server.h"
 
 #define SIZE 1024
 #define MAX_FILENAME_LENGTH 256
 
-uint64_t ntohll(uint64_t value) {
-    static const int num = 42;
-    if (*(char *)&num == 42) {
-        uint64_t result = 0;
-        for (int i = 0; i < 8; i++) {
-            result = (result << 8) | ((value >> (i * 8)) & 0xFF);
-        }
-        return result;
-    } else {
-        return value;
-    }
-}
 
 void write_file(int client_socket) {
-    char buffer[SIZE];
-    char filename[SIZE];
+    char buffer[SIZE], filename[SIZE], file_size_str[SIZE];
     ssize_t bytes_received;
-    off_t file_size;
-
+    off_t file_size, total_received = 0;
     FILE *file;
 
     bytes_received = recv(client_socket, filename, sizeof(filename), 0);
@@ -42,15 +26,15 @@ void write_file(int client_socket) {
     }
     filename[bytes_received] = '\0';
 
-    uint64_t network_file_size;
-    bytes_received = recv(client_socket, &network_file_size, sizeof(network_file_size), 0);
+
+    bytes_received = recv(client_socket, file_size_str, sizeof(file_size_str), 0);
     if (bytes_received < 0) {
         perror("Error receiving file size");
         return;
     }
 
 
-    file_size = ntohll(network_file_size);
+    file_size = atoi(file_size_str);
 
     file = fopen(filename, "wb");
     if (file == NULL) {
@@ -58,7 +42,6 @@ void write_file(int client_socket) {
         return;
     }
 
-    off_t total_received = 0;
     while (total_received < file_size) {
         bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
         if (bytes_received <= 0) {
@@ -74,8 +57,7 @@ void write_file(int client_socket) {
 
 
 void download_file(int client_socket) {
-    char bufferSize[SIZE];
-    char filename[SIZE];
+    char bufferSize[SIZE], filename[SIZE];
     ssize_t bytes_received;
     FILE *file;
 

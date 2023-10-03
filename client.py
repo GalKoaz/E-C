@@ -1,9 +1,8 @@
 import socket
 import os
-import struct
 
 host = '127.0.0.1'
-port = 13019
+port = 13021
 
 
 def send_file(sock, filename):
@@ -14,8 +13,8 @@ def send_file(sock, filename):
 
             with open(filename, "rb") as file:
                 file_size = os.path.getsize(filename)
-                file_size_bytes = struct.pack("!Q", file_size)
-                sock.send(file_size_bytes)
+
+                sock.send(str(file_size).encode())
 
                 while file_size >= 0:
                     chunk = file.read(1024)
