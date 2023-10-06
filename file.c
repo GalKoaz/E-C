@@ -1,7 +1,3 @@
-//
-// Created by gal on 10/1/23.
-//
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -76,7 +72,7 @@ void download_file(int client_socket) {
 
     memset(bufferSize, 0, sizeof(bufferSize));
     fseek(file, 0L, SEEK_END);
-    off_t file_size  = ftell(file);
+    off_t file_size = ftell(file);
     fseek(file, 0L, SEEK_SET);
     snprintf(bufferSize, sizeof(bufferSize), "%ld", file_size);
     send(client_socket, bufferSize, strlen(bufferSize), 0);
@@ -84,7 +80,7 @@ void download_file(int client_socket) {
     char ack[3];
     recv(client_socket, ack, sizeof(ack), 0);
 
-    size_t bytes_read = 0;
+    size_t bytes_read;
     off_t total_send = 0;
 
     char buffer[SIZE];

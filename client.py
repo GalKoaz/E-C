@@ -2,7 +2,7 @@ import socket
 import os
 
 host = '127.0.0.1'
-port = 13021
+port = 13034
 
 
 def send_file(sock, filename):
@@ -15,6 +15,8 @@ def send_file(sock, filename):
                 file_size = os.path.getsize(filename)
 
                 sock.send(str(file_size).encode())
+
+                sock.send(b"ACK")
 
                 while file_size >= 0:
                     chunk = file.read(1024)
@@ -82,28 +84,78 @@ def receive_file_list(sock):
         print(f"Error: {str(e)}")
 
 
+def login(sock):
+    response = "USERNAME_PASSWORD"
+    while response == "USERNAME_PASSWORD":
+        username = input("Please enter your username: ")
+        sock.send(username.encode())
+        ack = sock.recv(1024).decode()
+        password = input("Please enter your password: ")
+        sock.send(password.encode())
+        response = sock.recv(1024).decode()
+    if response == 'OK':
+        return 1
+    else:
+        print(f"Registration failed: {response}")
+        return 0
+
+
+def register(sock):
+    username = input("Please enter your username: ")
+    sock.send(username.encode())
+
+    response = sock.recv(1024).decode()
+    while response == 'USERNAME_TAKEN':
+        print("Username is already taken!")
+        username = input("Please enter your username: ")
+        sock.send(username.encode())
+        response = sock.recv(1024).decode()
+
+    password = input("Please enter your password: ")
+    sock.send(password.encode())
+
+    response = sock.recv(1024).decode()
+    if response == 'OK':
+        return 1
+    else:
+        print(f"Registration failed: {response}")
+        return 0
+
+
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
 
-    while True:
-        operation = input("Type 'Upload' to upload a file, 'Download' to download a file,'Files' to see the files "
-                          "already uploaded, or 'exit' to exit: ")
-        if operation == 'Upload':
-            sock.send(b'upload')
-            filename = input('Enter the filename you want to send: ')
-            send_file(sock, filename)
-        elif operation == 'Download':
-            sock.send(b'download')
-            filename = input('Enter the filename you want to download: ')
-            download_file(sock, filename)
-        elif operation == 'Files':
-            sock.send(b'list_files')
-            receive_file_list(sock)
-        elif operation == 'exit':
-            break
+    temp = 0
+    while temp == 0:
+        check = input("Type Login or Register: ")
+        if check == 'Login':
+            sock.send(b'login')
+            temp = login(sock)
+        elif check == 'Register':
+            sock.send(b'register')
+            temp = register(sock)
         else:
-            print('Invalid operation. Please enter "Upload," "Download," or "exit".')
+            print("Please Type 'Login' or 'Register': ")
+    if temp != 0:
+        while True:
+            operation = input("Type 'Upload' to upload a file, 'Download' to download a file,'Files' to see the files "
+                              "already uploaded, or 'exit' to exit: ")
+            if operation == 'Upload':
+                sock.send(b'upload')
+                filename = input('Enter the filename you want to send: ')
+                send_file(sock, filename)
+            elif operation == 'Download':
+                sock.send(b'download')
+                filename = input('Enter the filename you want to download: ')
+                download_file(sock, filename)
+            elif operation == 'Files':
+                sock.send(b'list_files')
+                receive_file_list(sock)
+            elif operation == 'exit':
+                break
+            else:
+                print('Invalid operation. Please enter "Upload," "Download," or "exit".')
 
     sock.close()
 

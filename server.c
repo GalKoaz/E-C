@@ -8,7 +8,7 @@
 #include <poll.h>
 #include "server.h"
 
-#define PORT 13021
+#define PORT 13034
 #define SA struct sockaddr
 #define SIZE 1025
 
@@ -42,6 +42,9 @@ int main() {
         printf("Server listening..\n");
     }
 
+    // Sql connection:
+    sqlite3 * db = sqlConnect();
+
     len = sizeof(cli);
 
     struct pollfd *pfds = malloc(sizeof *pfds * MAX_CLIENTS);
@@ -70,6 +73,8 @@ int main() {
                         printf("Client connected from %s:%d\n", inet_ntoa(cli.sin_addr), ntohs(cli.sin_port));
                     }
                 } else {
+                    loginForm(pfds[i].fd, i, num_clients, db, pfds);
+
                     char request[SIZE];
                     ssize_t bytes_received;
                     memset(request, 0, sizeof(request));
@@ -104,5 +109,6 @@ int main() {
                 }
             }
         }
+        //sqlite3_close(db);
     }
 }
