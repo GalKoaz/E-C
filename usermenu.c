@@ -32,3 +32,38 @@ int loginForm(int client_socket, int i, int num_clients,sqlite3 *db, struct poll
     }
     return 1;
 }
+
+int menuBar(int client_socket, int i, int num_clients, struct pollfd *pfds){
+    char request[SIZE];
+    ssize_t bytes_received;
+    memset(request, 0, sizeof(request));
+
+    bytes_received = recv(client_socket, request, sizeof(request), 0);
+    if (bytes_received < 0) {
+        perror("Error receiving request");
+        return 1;
+    } else if (bytes_received == 0) {
+        printf("Client closed the connection.\n");
+        close(client_socket);
+        del_from_pfds(pfds, i, &num_clients);
+        return 1;
+    }
+
+    request[bytes_received] = '\0';
+
+    if (strcmp(request, "upload") == 0) {
+        write_file(client_socket);
+    } else if (strcmp(request, "download") == 0) {
+        download_file(client_socket);
+    } else if (strcmp(request, "list_files") == 0) {
+        list_files(client_socket);
+    } else if (strcmp(request, "exit") == 0) {
+        printf("Client requested to exit the session.\n");
+        close(client_socket);
+        del_from_pfds(pfds, i, &num_clients);
+        return 1;
+    } else {
+        printf("Invalid request from client: %s\n", request);
+    }
+    return 0;
+}

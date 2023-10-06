@@ -9,11 +9,11 @@
 
 sqlite3 * sqlConnect(){
     sqlite3 *db = NULL;
-    int rc = sqlite3_open("new.db", &db);
+    int rc = sqlite3_open("data.db", &db);
     if (rc) {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
     } else {
-        printf("Sql Connected !\n");
+        printf("SQL Connected!\n");
     }
     const char *create_table_sql = "CREATE TABLE IF NOT EXISTS users ("
                                    "id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -24,8 +24,6 @@ sqlite3 * sqlConnect(){
     if (rc != SQLITE_OK) {
         fprintf(stderr, "SQL error during table creation: %s\n", sqlite3_errmsg(db));
         sqlite3_close(db);
-    } else {
-        fprintf(stdout, "Table created successfully\n");
     }
     return db;
 }
@@ -89,7 +87,7 @@ int receive_username_password(int client_fd, char *username, char *password, sql
         return -1;
     }
 
-    fprintf(stdout, "User inserted successfully\n");
+    fprintf(stdout, "User '%s' inserted successfully\n",username);
     sqlite3_finalize(stmt);
     return 0;
 }

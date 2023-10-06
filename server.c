@@ -3,18 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <unistd.h>
 #include <arpa/inet.h>
 #include <poll.h>
 #include "server.h"
 
 #define PORT 13034
 #define SA struct sockaddr
-#define SIZE 1025
 
 
 int main() {
-    int sockfd = 0, newfd = 0, MAX_CLIENTS = 5, num_clients = 0;
+    int sockfd, newfd, MAX_CLIENTS = 5, num_clients = 0;
     unsigned len;
     struct sockaddr_in servaddr, cli;
 
@@ -59,9 +57,9 @@ int main() {
         int ret = poll(pfds, num_clients, -1);
         if (ret == -1) {
             perror("poll");
+            sqlite3_close(db);
             exit(1);
         }
-
         for (int i = 0; i < num_clients; ++i) {
             if (pfds[i].revents & POLLIN) {
                 if (pfds[i].fd == sockfd) {
@@ -71,44 +69,15 @@ int main() {
                     } else {
                         add_to_pfds(&pfds, newfd, &num_clients, &MAX_CLIENTS);
                         printf("Client connected from %s:%d\n", inet_ntoa(cli.sin_addr), ntohs(cli.sin_port));
+                        loginForm(newfd, i, num_clients, db, pfds);
                     }
                 } else {
-                    loginForm(pfds[i].fd, i, num_clients, db, pfds);
-
-                    char request[SIZE];
-                    ssize_t bytes_received;
-                    memset(request, 0, sizeof(request));
-
-                    bytes_received = recv(pfds[i].fd, request, sizeof(request), 0);
-                    if (bytes_received < 0) {
-                        perror("Error receiving request");
+                    if(!menuBar(pfds[i].fd, i, num_clients, pfds)){
                         break;
-                    } else if (bytes_received == 0) {
-                        printf("Client closed the connection.\n");
-                        close(pfds[i].fd);
-                        del_from_pfds(pfds, i, &num_clients);
-                        break;
-                    }
-
-                    request[bytes_received] = '\0';
-
-                    if (strcmp(request, "upload") == 0) {
-                        write_file(pfds[i].fd);
-                    } else if (strcmp(request, "download") == 0) {
-                        download_file(pfds[i].fd);
-                    } else if (strcmp(request, "list_files") == 0) {
-                        list_files(pfds[i].fd);
-                    } else if (strcmp(request, "exit") == 0) {
-                        printf("Client requested to exit the session.\n");
-                        close(pfds[i].fd);
-                        del_from_pfds(pfds, i, &num_clients);
-                        break;
-                    } else {
-                        printf("Invalid request from client: %s\n", request);
                     }
                 }
             }
         }
-        //sqlite3_close(db);
     }
+    sqlite3_close(db);
 }

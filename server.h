@@ -10,6 +10,7 @@ void download_file(int client_socket);
 void list_files(int client_socket);
 void add_to_pfds(struct pollfd *pfds[], int newfd, int *fd_count, int *fd_size);
 void del_from_pfds(struct pollfd pfds[], int i, int *fd_count);
+int menuBar(int client_socket, int i, int num_clients, struct pollfd *pfds);
 sqlite3 * sqlConnect();
 int loginForm(int client_socket, int i, int num_clients,sqlite3 *db, struct pollfd *pfds);
 int is_username_taken(sqlite3 *db, const char *username);
