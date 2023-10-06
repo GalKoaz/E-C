@@ -27,6 +27,8 @@ int loginForm(int client_socket, int i, int num_clients,sqlite3 *db, struct poll
     request[bytes_received] = '\0';
     if (strcmp(request, "register") == 0) {
         handle_registration(client_socket, db);
+    }else if (strcmp(request, "login") == 0) {
+        handle_login(client_socket, db);
     }
     return 1;
 }

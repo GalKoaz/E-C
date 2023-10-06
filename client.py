@@ -2,7 +2,7 @@ import socket
 import os
 
 host = '127.0.0.1'
-port = 13030
+port = 13034
 
 
 def send_file(sock, filename):
@@ -85,19 +85,36 @@ def receive_file_list(sock):
 
 
 def login(sock):
-    print("login")
+    response = "USERNAME_PASSWORD"
+    while response == "USERNAME_PASSWORD":
+        username = input("Please enter your username: ")
+        sock.send(username.encode())
+        ack = sock.recv(1024).decode()
+        password = input("Please enter your password: ")
+        sock.send(password.encode())
+        response = sock.recv(1024).decode()
+    if response == 'OK':
+        return 1
+    else:
+        print(f"Registration failed: {response}")
+        return 0
 
 
 def register(sock):
-    print("register")
     username = input("Please enter your username: ")
     sock.send(username.encode())
-    ack = sock.recv(3)
+
+    response = sock.recv(1024).decode()
+    while response == 'USERNAME_TAKEN':
+        print("Username is already taken!")
+        username = input("Please enter your username: ")
+        sock.send(username.encode())
+        response = sock.recv(1024).decode()
+
     password = input("Please enter your password: ")
     sock.send(password.encode())
 
     response = sock.recv(1024).decode()
-    print(response)
     if response == 'OK':
         return 1
     else:
@@ -114,13 +131,13 @@ def main():
         check = input("Type Login or Register: ")
         if check == 'Login':
             sock.send(b'login')
-            login(sock)
+            temp = login(sock)
         elif check == 'Register':
             sock.send(b'register')
             temp = register(sock)
         else:
             print("Please Type 'Login' or 'Register': ")
-    if temp != -1:
+    if temp != 0:
         while True:
             operation = input("Type 'Upload' to upload a file, 'Download' to download a file,'Files' to see the files "
                               "already uploaded, or 'exit' to exit: ")
