@@ -12,7 +12,8 @@
 void write_file(int client_socket) {
     char buffer[SIZE], filename[SIZE], file_size_str[SIZE];
     ssize_t bytes_received;
-    off_t file_size, total_received = 0;
+    off_t total_received = 0;
+    int file_size;
     FILE *file;
 
     bytes_received = recv(client_socket, filename, sizeof(filename), 0);
@@ -22,6 +23,8 @@ void write_file(int client_socket) {
     }
     filename[bytes_received] = '\0';
 
+
+    memset(file_size_str, 0, sizeof(file_size_str));
 
     bytes_received = recv(client_socket, file_size_str, sizeof(file_size_str), 0);
     if (bytes_received < 0) {
@@ -37,6 +40,9 @@ void write_file(int client_socket) {
         perror("Error opening file");
         return;
     }
+
+    const char *response = "ACK";
+    send(client_socket, response, strlen(response), 0);
 
     while (total_received < file_size) {
         bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
