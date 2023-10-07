@@ -2,7 +2,7 @@ import socket
 import os
 
 host = '127.0.0.1'
-port = 13034
+port = 13040
 
 
 def send_file(sock, filename):
@@ -14,19 +14,20 @@ def send_file(sock, filename):
             with open(filename, "rb") as file:
                 file_size = os.path.getsize(filename)
 
+                # temp = str(file_size).encode()
                 sock.send(str(file_size).encode())
 
-                sock.send(b"ACK")
-
-                while file_size >= 0:
-                    chunk = file.read(1024)
-                    if not chunk:
-                        break
-                    sock.send(chunk)
-                    file_size -= len(chunk)
-            print(f"File '{filename}' sent successfully.")
-        else:
-            print('File not found. Please enter a valid filename.')
+                response = sock.recv(1024).decode()
+                if response == 'ACK':
+                    while file_size >= 0:
+                        chunk = file.read(1024)
+                        if not chunk:
+                            break
+                        sock.send(chunk)
+                        file_size -= len(chunk)
+                    print(f"File '{filename}' sent successfully.")
+                else:
+                    print('File not found. Please enter a valid filename.')
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -93,6 +94,8 @@ def login(sock):
         password = input("Please enter your password: ")
         sock.send(password.encode())
         response = sock.recv(1024).decode()
+        if response == "USERNAME_PASSWORD":
+            print("Username or password Incorrect!")
     if response == 'OK':
         return 1
     else:

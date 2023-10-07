@@ -7,7 +7,7 @@
 #include <poll.h>
 #include "server.h"
 
-#define PORT 13034
+#define PORT 13040
 #define SA struct sockaddr
 
 
